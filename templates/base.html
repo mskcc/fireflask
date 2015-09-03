@@ -31,9 +31,9 @@
             </ul>
         </li>
     </ul>
-    <p class="navbar-text"><strong>Current Database:</strong> {{ request.args.get("dbname") }}</p>
+    <p class="navbar-text"><strong>Current Database:</strong> {{ db_name }}</p>
 
-<button class="navbar-btn btn-warning">Delete Checked Workflows</button>
+<button id="wf_delete" class="navbar-btn btn-warning">Delete Checked Workflows</button>
 </div> 
     </nav>
     <div class="container-fluid">
@@ -49,6 +49,6 @@
     </div>
 </footer>
 {% endblock %}
-
+<div id="dbname" style="display:none">{{ dbname }}</div>
 </body>
 </html>

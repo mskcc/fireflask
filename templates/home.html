@@ -43,8 +43,8 @@
             <tr><th colspan="3">Current Database Status</th></tr>
             <tr>
                 <th></th>
-                <th><a href="/fw">Fireworks</a></th>
-                <th><a href="/wf">Workflows</a></th>
+                <th><a href="{{ dbname }}/fw">Fireworks</a></th>
+                <th><a href="/{{ dbname }}/wf">Workflows</a></th>
             </tr>
             {% for state, fw_num, wf_num in state_nums %}
                 <tr>

@@ -1,16 +1,17 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request,jsonify,redirect
 from fireworks import Firework
 from fireworks.utilities.fw_serializers import DATETIME_HANDLER
 from pymongo import DESCENDING, MongoClient
 import os, json, sys
-from fireworks.core.launchpad import LaunchPad
+#oh shitttt son
+from launchpad import FlaskPad
 from flask.ext.paginate import Pagination
 
 app = Flask(__name__)
 app.use_reloader=True
 CMO_CONFIG_LOC="/opt/common/CentOS_6-dev/cmo"
 hello = __name__
-lp = LaunchPad.from_file(CMO_CONFIG_LOC + "/cmo.yaml")
+lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo.yaml")
 PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
 client = MongoClient(host="plvcbiocmo2.mskcc.org", port=27017)
@@ -38,69 +39,63 @@ def pluralize(number, singular='', plural='s'):
     else:
         return plural
 
-
 @app.route("/", methods=['GET'])
-def home():
+@app.route("/<dbname>", methods=['GET'])
+def home(dbname=None):
     fw_nums = []
     wf_nums = []
     selected = None
-    db_name = request.args.get("dbname")
-    if not db_name:
-       db_name="cmo"
-    config_file = get_dbconfig(db_name)
-    if config_file:
-      global lp
-      lp = LaunchPad.from_file(config_file)
-      selected = db_name
-#      if 'delete' in request.form:
- #         for wf_id in request.form.getlist('delete'):
- #             delete_wf(wf_id)
+    if not dbname:
+        return redirect("/cmo")
+    else:
+        db_name=dbname
     db_names = client.database_names()
     for administrative_db in ["admin", "local", "test", "daemons"]:
 	db_names.remove(administrative_db)
     for state in STATES:
-        fw_nums.append(lp.get_fw_ids(query={'state': state}, count_only=True))
-        wf_nums.append(lp.get_wf_ids(query={'state': state}, count_only=True))
+        fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
+        wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
     state_nums = zip(STATES, fw_nums, wf_nums)
 
     tot_fws = sum(fw_nums)
     tot_wfs = sum(wf_nums)
 
     # Newest Workflows table data
-    wfs_shown = lp.workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)])
+    wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)])
     wf_info = []
     for item in wfs_shown:
         wf_info.append({
             "id": item['nodes'][0],
             "name": item['name'],
             "state": item['state'],
-            "fireworks": list(lp.fireworks.find({"fw_id": {"$in": item["nodes"]}},
+            "fireworks": list(lp.client[dbname].fireworks.find({"fw_id": {"$in": item["nodes"]}},
                                                 limit=PER_PAGE, sort=[('fw_id', DESCENDING)],
                                                 projection=["state", "name", "fw_id"]))
         })
     return render_template('home.html', **locals())
 
-@app.route('/wf/<int:wf_id>/delete')
-def delete_wf(wf_id):
+@app.route('/<dbname>/wf/<int:wf_id>/delete')
+def delete_wf(dbname, wf_id):
     try:
         wf_id=int(wf_id)
     except: 
         raise ValueError("Invalid wf_id: {}".format(wf_id))
     try:
-        lp.delete_wf(wf_id)
+        lp.delete_wf(dbname, wf_id)
+        return jsonify({ "status": "success" })
     except:
-        pass
+        return jsonify({ "status": "failed" })
 
 
 
 
-@app.route('/fw/<int:fw_id>')
-def show_fw(fw_id):
+@app.route('/<dbname>/fw/<int:fw_id>')
+def show_fw(dbname, fw_id):
     try:
         int(fw_id)
     except:
         raise ValueError("Invalid fw_id: {}".format(fw_id))
-    fw = lp.get_fw_dict_by_id(fw_id)
+    fw = lp.get_fw_dict_by_id(dbname, fw_id)
     command = None
     if '_tasks' in fw['spec']:
         if 'script' in fw['spec']['_tasks'][0]:
@@ -112,23 +107,23 @@ def show_fw(fw_id):
     return render_template('fw_details.html', **locals())
 
 
-@app.route('/wf/<int:wf_id>')
-def show_workflow(wf_id):
+@app.route('/<dbname>/wf/<int:wf_id>')
+def show_workflow(dbname, wf_id):
     try:
         int(wf_id)
     except ValueError:
         raise ValueError("Invalid fw_id: {}".format(wf_id))
-    wf = lp.get_wf_summary_dict(wf_id)
+    wf = lp.get_wf_summary_dict(dbname,wf_id)
     wf = json.loads(json.dumps(wf, default=DATETIME_HANDLER))  # formats ObjectIds
     return render_template('wf_details.html', **locals())
 
 
-@app.route('/fw/', defaults={"state": "total"})
-@app.route("/fw/<state>/")
-def fw_states(state):
-    db = lp.fireworks
+@app.route('/<dbname>/fw/', defaults={"state": "total"})
+@app.route("/<dbname>/fw/<state>/")
+def fw_states(dbname, state):
+    db = lp.client[dbname].fireworks
     q = {} if state == "total" else {"state": state}
-    fw_count = lp.get_fw_ids(query=q, count_only=True)
+    fw_count = lp.get_fw_ids(dbname, query=q, count_only=True)
     try:
         page = int(request.args.get('page', 1))
     except ValueError:
@@ -141,12 +136,12 @@ def fw_states(state):
     return render_template('fw_state.html', **locals())
 
 
-@app.route('/wf/', defaults={"state": "total"})
-@app.route("/wf/<state>/")
-def wf_states(state):
-    db = lp.workflows
+@app.route('/<dbname>/wf/', defaults={"state": "total"})
+@app.route("/<dbname>/wf/<state>/")
+def wf_states(dbname, state):
+    db = lp.client[dbname].workflows
     q = {} if state == "total" else {"state": state}
-    wf_count = lp.get_fw_ids(query=q, count_only=True)
+    wf_count = lp.get_fw_ids(dbname, query=q, count_only=True)
     try:
         page = int(request.args.get('page', 1))
     except ValueError:
