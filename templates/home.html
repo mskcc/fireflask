@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}FireWorks Dashboard{% endblock %}
+{% block title %}CMOFLOW{% endblock %}
 
 {% block content %} 
 	
@@ -19,7 +19,7 @@
                             <div class="col-md-6">
                                 <span class="label {{wf.state}}">{{wf.state}}</span>
                                 <span class="text-right">  
-                                    ID: <a href="/wf/{{ wf.id }}">{{ wf.id }}</a>
+                                    ID: <a href="{{ dbname }}/wf/{{ wf.id }}">{{ wf.id }}</a>
                                 </span>
                             </div>
                            
@@ -28,7 +28,7 @@
                         <div class="pull-up">
                             {% for fw  in wf.fireworks %}
                             <div>
-                                <small><a class="fw-link {{fw.state}}" href="/fw/{{ fw.fw_id }}">{{fw.name}}</a></small>
+                                <small><a class="fw-link {{fw.state}}" href="{{ dbname }}/fw/{{ fw.fw_id }}">{{fw.name}}</a></small>
                             </div>
                             {% endfor %}
                         </div>
@@ -53,14 +53,14 @@
                             {{ state }}
                         </span>
                     </td>
-                    <td><center><a href="/fw/{{ state }}">{{ fw_num }}</a></center></td>
-                    <td><center><a href="/wf/{{ state }}">{{ wf_num }}</a></center></td>
+                    <td><center><a href="{{ dbname }}/fw/{{ state }}">{{ fw_num }}</a></center></td>
+                    <td><center><a href="{{ dbname }}/wf/{{ state }}">{{ wf_num }}</a></center></td>
                 </tr>
             {% endfor %}
             <tr>
                 <th><div align="right">TOTAL</div></th>
-                <td><center><a href="/fw">{{ tot_fws }}</a></center></td>
-                <td><center><a href="/wf">{{ tot_wfs }}</a></center></td>
+                <td><center><a href="{{ dbname }}/fw">{{ tot_fws }}</a></center></td>
+                <td><center><a href="{{ dbname }}/wf">{{ tot_wfs }}</a></center></td>
             </tr>
         </table>
     </div>

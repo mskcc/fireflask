@@ -6,7 +6,15 @@ import os, json, sys
 #oh shitttt son
 from launchpad import FlaskPad
 from flask.ext.paginate import Pagination
+###############################
+#from tornado.wsgi import WSGIContainer
+#from tornado.httpserver import HTTPServer
+#from tornado.ioloop import IOLoop
+#from . import app
 
+#http_server = HTTPServer(WSGIContainer(app))
+#http_server.listen(5000)
+#IOLoop.instance().start()
 app = Flask(__name__)
 app.use_reloader=True
 CMO_CONFIG_LOC="/opt/common/CentOS_6-dev/cmo"
@@ -15,6 +23,9 @@ lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo.yaml")
 PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
 client = MongoClient(host="plvcbiocmo2.mskcc.org", port=27017)
+dbnames = client.database_names()
+for administrative_db in ["admin", "local", "test", "daemons"]:
+    dbnames.remove(administrative_db)
 
 #FIXME replace ith CMO method
 
@@ -41,17 +52,16 @@ def pluralize(number, singular='', plural='s'):
 
 @app.route("/", methods=['GET'])
 @app.route("/<dbname>", methods=['GET'])
+@app.route("/<dbname>/", methods=['GET'])
 def home(dbname=None):
+    db_names = dbnames  
     fw_nums = []
     wf_nums = []
     selected = None
     if not dbname:
         return redirect("/cmo")
     else:
-        db_name=dbname
-    db_names = client.database_names()
-    for administrative_db in ["admin", "local", "test", "daemons"]:
-	db_names.remove(administrative_db)
+       db_name=dbname
     for state in STATES:
         fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
         wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
@@ -91,6 +101,9 @@ def delete_wf(dbname, wf_id):
 
 @app.route('/<dbname>/fw/<int:fw_id>')
 def show_fw(dbname, fw_id):
+    db_name=dbname
+    global dbnames
+    db_names = dbnames
     try:
         int(fw_id)
     except:
@@ -109,6 +122,9 @@ def show_fw(dbname, fw_id):
 
 @app.route('/<dbname>/wf/<int:wf_id>')
 def show_workflow(dbname, wf_id):
+    global dbnames
+    db_names = dbnames
+    db_name = dbname
     try:
         int(wf_id)
     except ValueError:
@@ -121,6 +137,9 @@ def show_workflow(dbname, wf_id):
 @app.route('/<dbname>/fw/', defaults={"state": "total"})
 @app.route("/<dbname>/fw/<state>/")
 def fw_states(dbname, state):
+    global dbnames
+    db_names=dbnames
+    db_name = dbname
     db = lp.client[dbname].fireworks
     q = {} if state == "total" else {"state": state}
     fw_count = lp.get_fw_ids(dbname, query=q, count_only=True)
@@ -139,6 +158,9 @@ def fw_states(dbname, state):
 @app.route('/<dbname>/wf/', defaults={"state": "total"})
 @app.route("/<dbname>/wf/<state>/")
 def wf_states(dbname, state):
+    global dbnames
+    db_names=dbname
+    db_name = dbname
     db = lp.client[dbname].workflows
     q = {} if state == "total" else {"state": state}
     wf_count = lp.get_fw_ids(dbname, query=q, count_only=True)

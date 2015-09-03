@@ -43,12 +43,19 @@
 
   <h6 class="text-center">Firework {{ fw_id }} : {{fw.name}} </h6>
   {% if command is defined %}
-  <h4 class="text-center">{{ command }}</h4>
+  <div class="bs-callout bs-callout-primary">
+      <h4>Command</h4>{{ command }} </div>
   {% endif %}
-  {% if bsub_options is defined %}
+  {% if bsub_options|length > 0 %}
+  <form class="form-inline">
   {% for key, value in bsub_options.iteritems() %}
-  <h6 class="text-center">{{ key }}:{{ value }}</h6>
+  <div class="form-group">
+      <label for="key">{{ key }}</label>
+      <input type="text" class="form-control" id="key" value={{ value }}>
+      </input>
+  </div>
   {% endfor %}
+  <button type="submit" class="btn btn-danger">Update Bsub Options</button>
   {% endif %}
 
   <center>created on {{ fw.created_on|datetime }}</center>
