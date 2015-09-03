@@ -12,6 +12,16 @@ footer .navbar .nav {
     background-color: #00497F;
 }
 
+.navbar-btn {
+    margin-top:12px;
+}
+    
+
+body {
+    padding-top:50px;
+}
+
+.navbar-default p.navbar-text,
 .navbar-nav .dropdown-menu,
 .navbar-nav .dropdown-menu a,
 .navbar.navbar-default {

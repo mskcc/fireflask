@@ -39,22 +39,22 @@ def pluralize(number, singular='', plural='s'):
         return plural
 
 
-@app.route("/", methods=['POST', 'GET'])
+@app.route("/", methods=['GET'])
 def home():
     fw_nums = []
     wf_nums = []
     selected = None
-    if request.method == "POST":
-       print request.form
-       db_name = request.form['dbname']
-       config_file = get_dbconfig(db_name)
-       if config_file:
-          global lp
-          lp = LaunchPad.from_file(config_file)
-          selected = db_name
-       if 'delete' in request.form:
-          for wf_id in request.form.getlist('delete'):
-              delete_wf(wf_id)
+    db_name = request.args.get("dbname")
+    if not db_name:
+       db_name="cmo"
+    config_file = get_dbconfig(db_name)
+    if config_file:
+      global lp
+      lp = LaunchPad.from_file(config_file)
+      selected = db_name
+#      if 'delete' in request.form:
+ #         for wf_id in request.form.getlist('delete'):
+ #             delete_wf(wf_id)
     db_names = client.database_names()
     for administrative_db in ["admin", "local", "test", "daemons"]:
 	db_names.remove(administrative_db)
