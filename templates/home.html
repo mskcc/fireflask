@@ -3,22 +3,11 @@
 
 {% block content %} 
 	
- <div class="row">
-    <div class="span12">
-        <h3 class="text-center">Workflow Dashboard</h3>
-    </div>
- </div>
-
 <div class="row pull-down">
-    <div class="span6">
+    <div class="col-md-6">
         <table class="table table-bordered">
 
-            <tr><th colspan="3"><form action="{{ url_for('home')}}" method=post><select onchange="this.form.submit()" name="dbname">
-{% for db in db_names%}
-<option {% if selected == db %} selected="selected" {% endif %} value={{ db }}>{{ db }}</option>
-{% endfor %}
-</select>
-</form>
+            <tr><th colspan="3"><button type="submit" value="Delete">Delete Selected</button>
 
 </th></tr>
             <tr><th colspan="3"><a href="/wf">Newest Workflows</a></th></tr>
@@ -26,12 +15,12 @@
                 <tr>
                     <td>
                         <div class="row pull-down-sm">
-                            <div class="span2">
-                                <strong>{{ wf.name }}</strong>
+                            <div class="col-md-6">
+                                <input class="deletecontrol" type="checkbox" name="delete" value="{{ wf.id }}">{{ wf.name }}</input>
                             </div>
-                            <div class="span3">
+                            <div class="col-md-6">
                                 <span class="label {{wf.state}}">{{wf.state}}</span>
-                                <span class="pull-right">  
+                                <span class="text-right">  
                                     ID: <a href="/wf/{{ wf.id }}">{{ wf.id }}</a>
                                 </span>
                             </div>
@@ -51,7 +40,7 @@
             {% endfor %}
         </table>
     </div>
-    <div class="span6">
+    <div class="col-md-6">
         <table class="table table-bordered">
             <tr><th colspan="3">Current Database Status</th></tr>
             <tr>

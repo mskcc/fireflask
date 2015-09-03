@@ -41,7 +41,15 @@
     </span>
   </center>
 
-  <h4 class="text-center">Firework {{ fw_id }} : {{fw.name}} </h4>
+  <h6 class="text-center">Firework {{ fw_id }} : {{fw.name}} </h6>
+  {% if command is defined %}
+  <h4 class="text-center">{{ command }}</h4>
+  {% endif %}
+  {% if bsub_options is defined %}
+  {% for key, value in bsub_options.iteritems() %}
+  <h6 class="text-center">{{ key }}:{{ value }}</h6>
+  {% endfor %}
+  {% endif %}
 
   <center>created on {{ fw.created_on|datetime }}</center>
 

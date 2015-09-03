@@ -4,9 +4,37 @@ footer .navbar .nav {
   vertical-align: top;
 }
 
+.navbar-nav .dropdown-menu li>a:hover,
+.navbar-default .navbar-nav>.open>a:focus, 
+.navbar-default .navbar-nav>.open>a:hover, 
+.navbar-default .navbar-nav>.open>a {
+    color: white;
+    background-color: #00497F;
+}
+
+.navbar-nav .dropdown-menu,
+.navbar-nav .dropdown-menu a,
+.navbar.navbar-default {
+    background-color: #319ae8;
+    color: white;
+}
+.navbar-default .navbar-nav>li>a {
+    color: white;
+}
+input.deletecontrol {
+    margin-top:0px;
+    margin-right:5px;
+}
+
 .brand {
-	margin-top: 20px;
-	max-width: 170px;
+    padding:0px;
+    height:50px;
+
+}
+a.navbar-brand {
+    padding-right:10px;
+    padding-left:10px;
+    padding-top: 0px;
 }
 
 .pull-down {

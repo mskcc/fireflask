@@ -45,13 +45,19 @@ def home():
     wf_nums = []
     selected = None
     if request.method == "POST":
+       print request.form
        db_name = request.form['dbname']
        config_file = get_dbconfig(db_name)
        if config_file:
           global lp
           lp = LaunchPad.from_file(config_file)
           selected = db_name
+       if 'delete' in request.form:
+          for wf_id in request.form.getlist('delete'):
+              delete_wf(wf_id)
     db_names = client.database_names()
+    for administrative_db in ["admin", "local", "test", "daemons"]:
+	db_names.remove(administrative_db)
     for state in STATES:
         fw_nums.append(lp.get_fw_ids(query={'state': state}, count_only=True))
         wf_nums.append(lp.get_wf_ids(query={'state': state}, count_only=True))
@@ -74,6 +80,19 @@ def home():
         })
     return render_template('home.html', **locals())
 
+@app.route('/wf/<int:wf_id>/delete')
+def delete_wf(wf_id):
+    try:
+        wf_id=int(wf_id)
+    except: 
+        raise ValueError("Invalid wf_id: {}".format(wf_id))
+    try:
+        lp.delete_wf(wf_id)
+    except:
+        pass
+
+
+
 
 @app.route('/fw/<int:fw_id>')
 def show_fw(fw_id):
@@ -82,6 +101,13 @@ def show_fw(fw_id):
     except:
         raise ValueError("Invalid fw_id: {}".format(fw_id))
     fw = lp.get_fw_dict_by_id(fw_id)
+    command = None
+    if '_tasks' in fw['spec']:
+        if 'script' in fw['spec']['_tasks'][0]:
+            command = fw['spec']['_tasks'][0]['script'][0]
+    bsub_options  = {}
+    if '_queueadapter' in fw['spec']:
+            bsub_options = fw['spec']['_queueadapter']
     fw = json.loads(json.dumps(fw, default=DATETIME_HANDLER))  # formats ObjectIds
     return render_template('fw_details.html', **locals())
 
