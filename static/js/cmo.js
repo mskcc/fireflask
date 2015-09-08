@@ -37,7 +37,7 @@ $(document).ready(function() {
     });
     if ($.inArray($("#fw_state").html() , ["COMPLETED", "RESERVED", "ARCHIVED", "RUNNING"]) > -1) {
         $("#bsub_options_form input").prop('disabled', true);
-        $("#modify_bsub").prop('disabled', true).html("can't modify " + $("#fw_state").html() + " job options");
+        $("#modify_bsub").prop('disabled', true).html("can't modify " + $("#fw_state").html().toLowerCase() + " job options");
     }
 
 });
