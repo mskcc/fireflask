@@ -47,24 +47,23 @@
       <h4>Command</h4>{{ command }} </div>
   {% endif %}
   {% if bsub_options|length > 0 %}
-  <form class="form-inline">
+  <form class="form-inline" id="bsub_options_form" method="post" action="/{{ dbname }}/fw/{{ fw_id }}/update">
   {% for key, value in bsub_options.iteritems() %}
-  <div class="form-group">
-      <label for="key">{{ key }}</label>
-      <input type="text" class="form-control" id="key" value={{ value }}>
-      </input>
+  <div class="form-group" >
+      <label for="{{ key }}">{{ key }}</label>
+      <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}" />
   </div>
   {% endfor %}
-  <button type="submit" class="btn btn-danger">Update Bsub Options</button>
+  <button type="submit" id="modify_bsub" class="btn btn-danger">Update Bsub Options</button>
+  </form>
   {% endif %}
-
   <center>created on {{ fw.created_on|datetime }}</center>
 
-  <button id="collapse-btn">Collapse</button>
-  <button id="expand-btn">Expand</button>
-  <button id="toggle-btn">Toggle</button>
-  <button id="toggle-level1-btn">Toggle level1</button>
-  <button id="toggle-level2-btn">Toggle level2</button>
+  <button class="btn btn-default" id="collapse-btn">Collapse</button>
+  <button class="btn btn-default" id="expand-btn">Expand</button>
+  <button class="btn btn-default" id="toggle-btn">Toggle</button>
+  <button class="btn btn-default" id="toggle-level1-btn">Toggle level1</button>
+  <button class="btn btn-default" id="toggle-level2-btn">Toggle level2</button>
   <div id="json"></div>
 
 {% endblock %}

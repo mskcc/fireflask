@@ -15,12 +15,13 @@ footer .navbar .nav {
 .navbar-btn {
     margin-top:12px;
 }
+.panel {
+}
 
 
 body {
     padding-top:50px;
 }
-
 .navbar-default p.navbar-text,
 .navbar-nav .dropdown-menu,
 .navbar-nav .dropdown-menu a,
@@ -36,12 +37,15 @@ input.deletecontrol {
     margin-right:5px;
 }
 
-.brand {
+.navbar-brand img.brand {
+    display:inline;
     padding:0px;
     height:50px;
 
 }
-a.navbar-brand {
+.navbar-default a.navbar-brand {
+    background-color: #319ae8;
+    color: white;
     padding-right:10px;
     padding-left:10px;
     padding-top: 0px;
@@ -71,6 +75,7 @@ a.navbar-brand {
     font-size: 11px;
     letter-spacing: .08em;
     color: #fff;
+    vertical-align: middle;
 }
 
 .fw-link{

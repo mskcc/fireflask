@@ -16,15 +16,16 @@
 <body>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
-        <div class="navbar-header"
-            <a class="navbar-brand" href="/">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/{{ dbname }}/">
                 <img  class="brand" src="{{ url_for('static', filename='images/msk.png') }}"></img>CMO Workflow Dashboard 
             </a>
         </div>
         <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
+            <li><a href="/{{ dbname }}/wf">Newest Workflows</a></li>
         <li class="dropdown">
-        <a href="#"class="dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Database<span class="caret"></span></a>
+        <a href="/"class="dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Database<span class="caret"></span></a>
             <ul class="dropdown-menu" id="dbmenu">
                 {% for db in db_names%}
                 <li><a href="#{{ db}}">{{ db }}</a></li>
@@ -33,8 +34,10 @@
         </li>
     </ul>
     <p class="navbar-text"><strong>Current Database:</strong> {{ db_name }}</p>
-
 <button id="wf_delete" class="navbar-btn btn-warning">Delete Checked Workflows</button>
+<button id="wf_rerun" class="navbar-btn btn-info">Reset Failed on Checked Workflows</button>
+<button id="check_all" class="navbar-btn btn-default">All</button>
+<button id="check_none" class="navbar-btn btn-default">None</button>
 </div> 
     </nav>
     <div class="container-fluid">
@@ -51,5 +54,8 @@
 </footer>
 {% endblock %}
 <div id="dbname" style="display:none">{{ dbname }}</div>
+{%if fw is defined%}
+<div id="fw_state" style="display:none">{{ fw.state }}</div>
+{% endif%}
 </body>
 </html>

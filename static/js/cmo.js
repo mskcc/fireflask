@@ -6,12 +6,40 @@ $(document).ready(function() {
     });
     $("#wf_delete").click(function(e) {
         $('input[type="checkbox"]:checked').each(function() {
-            console.log($(this).val());
             $.ajax({
-                url: "/"+$("#dbname").text() + "/wf/" + $(this).val() + "/delete"
-            }).done(function(data) { console.log(data); } )
+                url: "/"+$("#dbname").text() + "/wf/" + $(this).val() + "/delete",
+            });
+        });
+        $('input[type="checkbox"]:checked').promise().done(function() {
+            location.reload();
         });
     });
+    $("#wf_rerun").click(function(e) {
+        $('input[type="checkbox"]:checked').each(function() {
+            $.ajax({
+                url: "/"+$("#dbname").text() + "/wf/" + $(this).val() + "/rerun",
+            });
+        });
+        $('input[type="checkbox"]:checked').promise().done(function() {
+            location.reload();
+        });
+    });
+
+    $("#check_all").click(function(e) {
+        $('input[type="checkbox"]').each(function() {
+            $(this).prop("checked", true);
+        });
+    });
+    $("#check_none").click(function(e) {
+        $('input[type="checkbox"]').each(function() {
+            $(this).prop("checked", false);
+        });
+    });
+    if ($.inArray($("#fw_state").html() , ["COMPLETED", "RESERVED", "ARCHIVED", "RUNNING"]) > -1) {
+        $("#bsub_options_form input").prop('disabled', true);
+        $("#modify_bsub").prop('disabled', true).html("can't modify " + $("#fw_state").html() + " job options");
+    }
+
 });
 
 

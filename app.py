@@ -24,6 +24,14 @@ PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
 client = MongoClient(host="plvcbiocmo2.mskcc.org", port=27017)
 dbnames = client.database_names()
+
+state_to_class= {"RUNNING" : "warning",
+                 "WAITING" : "primary",
+                 "FIZZLED" : "danger",
+                 "READY"   : "info",
+                 "COMPLETED" : "success"
+                 }
+
 for administrative_db in ["admin", "local", "test", "daemons"]:
     dbnames.remove(administrative_db)
 
@@ -50,39 +58,6 @@ def pluralize(number, singular='', plural='s'):
     else:
         return plural
 
-@app.route("/", methods=['GET'])
-@app.route("/<dbname>", methods=['GET'])
-@app.route("/<dbname>/", methods=['GET'])
-def home(dbname=None):
-    db_names = dbnames  
-    fw_nums = []
-    wf_nums = []
-    selected = None
-    if not dbname:
-        return redirect("/cmo")
-    else:
-       db_name=dbname
-    for state in STATES:
-        fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
-        wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
-    state_nums = zip(STATES, fw_nums, wf_nums)
-
-    tot_fws = sum(fw_nums)
-    tot_wfs = sum(wf_nums)
-
-    # Newest Workflows table data
-    wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)])
-    wf_info = []
-    for item in wfs_shown:
-        wf_info.append({
-            "id": item['nodes'][0],
-            "name": item['name'],
-            "state": item['state'],
-            "fireworks": list(lp.client[dbname].fireworks.find({"fw_id": {"$in": item["nodes"]}},
-                                                limit=PER_PAGE, sort=[('fw_id', DESCENDING)],
-                                                projection=["state", "name", "fw_id"]))
-        })
-    return render_template('home.html', **locals())
 
 @app.route('/<dbname>/wf/<int:wf_id>/delete')
 def delete_wf(dbname, wf_id):
@@ -96,10 +71,32 @@ def delete_wf(dbname, wf_id):
     except:
         return jsonify({ "status": "failed" })
 
+@app.route('/<dbname>/wf/<int:wf_id>/rerun')
+def rerun_wf(dbname, wf_id):
+    try:
+        wf_id=int(wf_id)
+    except:
+        raise ValueError("Invalid wf_id: {}".format(wf_id))
+    try:
+        pass
+        #GET FW THAT IS FAILED OR DO NOTHING IF NO FAILED
+        #call lp rerun fwi
+    except:
+        pass
+
+@app.route('/<dbname>/fw/<int:fw_id>/update', methods=['POST'])
+def update_fw(dbname, fw_id):
+    db_name = dbname
+    global dbnames
+    update_hash={}
+    for (key, value) in request.form.items():
+        update_hash[key]=value
+    if len(update_hash.keys())>0:
+        print lp.client[db_name].fireworks.update({"fw_id":int(fw_id)},{"$set": {"spec._queueadapter":update_hash}})
+    return redirect(os.path.join(db_name, "fw", str(fw_id) ))
 
 
-
-@app.route('/<dbname>/fw/<int:fw_id>')
+@app.route('/<dbname>/fw/<int:fw_id>', methods=["GET"])
 def show_fw(dbname, fw_id):
     db_name=dbname
     global dbnames
@@ -175,6 +172,41 @@ def wf_states(dbname, state):
     all_states = STATES
     return render_template('wf_state.html', **locals())
 
+@app.route("/", methods=['GET'])
+@app.route("/<dbname>", methods=['GET'])
+@app.route("/<dbname>/", methods=['GET'])
+def home(dbname=None):
+    db_names = dbnames  
+    fw_nums = []
+    wf_nums = []
+    selected = None
+    if not dbname:
+        return redirect("/cmo")
+    else:
+       db_name=dbname
+    for state in STATES:
+        fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
+        wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
+    state_nums = zip(STATES, fw_nums, wf_nums)
+
+    tot_fws = sum(fw_nums)
+    tot_wfs = sum(wf_nums)
+
+    #g Newest Workflows table data
+    wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)])
+    wf_info = []
+    for item in wfs_shown:
+        wf_info.append({
+            "id": item['nodes'][0],
+            "name": item['name'],
+            "state": item['state'],
+            "fireworks": list(lp.client[dbname].fireworks.find({"fw_id": {"$in": item["nodes"]}},
+                                                limit=PER_PAGE, sort=[('fw_id', DESCENDING)],
+                                                projection=["state", "name", "fw_id"])),
+            'panel_class' : state_to_class[item['state']]
+        })
+
+    return render_template('home.html', **locals())
 
 if __name__ == "__main__":
     app.run(debug=True, host="plvcbiocmo2.mskcc.org", port=8080)
