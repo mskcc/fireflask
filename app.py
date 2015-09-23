@@ -73,16 +73,24 @@ def delete_wf(dbname, wf_id):
 
 @app.route('/<dbname>/wf/<int:wf_id>/rerun')
 def rerun_wf(dbname, wf_id):
+    db_name  = dbname
     try:
         wf_id=int(wf_id)
     except:
         raise ValueError("Invalid wf_id: {}".format(wf_id))
     try:
-        pass
+        wf= lp.client[db_name].workflows.find({'nodes':wf_id}).next()
+        print wf
+        for fw_id, state in wf['fw_states'].items():
+            if state =="FIZZLED":
+                print "attempting to rerun %s" % fw_id
+                lp.rerun_fw(dbname, int(fw_id), rerun_duplicates=False)
+        wf['state']="READY"
         #GET FW THAT IS FAILED OR DO NOTHING IF NO FAILED
         #call lp rerun fwi
     except:
         pass
+    return redirect("/" + db_name )
 
 @app.route('/<dbname>/fw/<int:fw_id>/update', methods=['POST'])
 def update_fw(dbname, fw_id):
@@ -156,7 +164,7 @@ def fw_states(dbname, state):
 @app.route("/<dbname>/wf/<state>/")
 def wf_states(dbname, state):
     global dbnames
-    db_names=dbname
+    db_names=dbnames
     db_name = dbname
     db = lp.client[dbname].workflows
     q = {} if state == "total" else {"state": state}
@@ -175,7 +183,8 @@ def wf_states(dbname, state):
 @app.route("/", methods=['GET'])
 @app.route("/<dbname>", methods=['GET'])
 @app.route("/<dbname>/", methods=['GET'])
-def home(dbname=None):
+@app.route("/<dbname>/<page>", methods=['GET'])
+def home(dbname=None, page=None):
     db_names = dbnames  
     fw_nums = []
     wf_nums = []
@@ -183,17 +192,20 @@ def home(dbname=None):
     if not dbname:
         return redirect("/cmo")
     else:
-       db_name=dbname
+        db_name = dbname
     for state in STATES:
         fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
         wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
     state_nums = zip(STATES, fw_nums, wf_nums)
-
     tot_fws = sum(fw_nums)
     tot_wfs = sum(wf_nums)
-
+    num_pages = int(tot_wfs / PER_PAGE)
+    if not page:
+        page = 0
+    else:
+        page = int(page)
     #g Newest Workflows table data
-    wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)])
+    wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)]).skip((page-1)*PER_PAGE)
     wf_info = []
     for item in wfs_shown:
         wf_info.append({
