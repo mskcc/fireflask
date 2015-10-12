@@ -41,8 +41,9 @@ class WFLock(object):
     Lock a Workflow, i.e. for performing update operations
     """
 
-    def __init__(self, lp, fw_id, expire_secs=WFLOCK_EXPIRATION_SECS, kill=WFLOCK_EXPIRATION_KILL):
+    def __init__(self, lp, db_name, fw_id, expire_secs=WFLOCK_EXPIRATION_SECS, kill=WFLOCK_EXPIRATION_KILL):
         self.lp = lp
+        self.db_name = db_name
         self.fw_id = fw_id
         self.expire_secs = expire_secs
         self.kill = kill
@@ -50,7 +51,7 @@ class WFLock(object):
     def __enter__(self):
         ctr = 0
         waiting_time = 0
-        links_dict = self.lp.workflows.find_and_modify({'nodes': self.fw_id, 'locked': {"$exists": False}},
+        links_dict = self.lp.client[self.db_name].workflows.find_and_modify({'nodes': self.fw_id, 'locked': {"$exists": False}},
                                                        {'$set': {'locked': True}})  # acquire lock
         while not links_dict:  # could not acquire lock b/c WF is already locked for writing
             ctr += 1
@@ -58,22 +59,22 @@ class WFLock(object):
             time.sleep(time_incr)  # wait a bit for lock to free up
             waiting_time += time_incr
             if waiting_time > self.expire_secs:  # too much time waiting, expire lock
-                wf = self.lp.workflows.find_one({'nodes': self.fw_id})
+                wf = self.lp.client[self.db_name].workflows.find_one({'nodes': self.fw_id})
                 if not wf:
                     raise ValueError("Could not find workflow in database: {}".format(self.fw_id))
                 if self.kill:  # force lock aquisition
                     self.lp.m_logger.warn('FORCIBLY ACQUIRING LOCK, WF: {}'.format(self.fw_id))
-                    links_dict = self.lp.workflows.find_and_modify({'nodes': self.fw_id},
+                    links_dict = self.lp.client[self.db_name].workflows.find_and_modify({'nodes': self.fw_id},
                                      {'$set': {'locked': True}})
                 else:  # throw error if we don't want to force lock acquisition
                     raise ValueError("Could not get workflow - LOCKED: {}".format(self.fw_id))
 
             else:
-                links_dict = self.lp.workflows.find_and_modify({'nodes': self.fw_id, 'locked': {"$exists":False}},
+                links_dict = self.lp.client[self.db_name].workflows.find_and_modify({'nodes': self.fw_id, 'locked': {"$exists":False}},
                                                            {'$set': {'locked': True}})  # retry lock
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lp.workflows.find_and_modify({"nodes": self.fw_id}, {"$unset": {"locked": True}})
+        self.lp.client[self.db_name].workflows.find_and_modify({"nodes": self.fw_id}, {"$unset": {"locked": True}})
 
 
 class FlaskPad(FWSerializable):
@@ -312,3 +313,247 @@ class FlaskPad(FWSerializable):
 
         return wf_ids
 
+    def rerun_fw(self, db_name, fw_id, rerun_duplicates=True):
+        m_fw = self.client[db_name].fireworks.find_one({"fw_id": fw_id}, {"state": 1})
+        print m_fw
+        # detect FWs that share the same launch. Must do this before rerun
+        duplicates = []
+        reruns = []
+        if rerun_duplicates:
+            f = self.client[db_name].fireworks.find_one({"fw_id": fw_id, "spec._dupefinder": {"$exists": True}}, {'launches':1})
+            if f:
+                for d in self.client[db_name].fireworks.find({"launches": {"$in": f['launches']}, "fw_id": {"$ne": fw_id}}, {"fw_id": 1}):
+                    duplicates.append(d['fw_id'])
+            duplicates = list(set(duplicates))
+        # rerun this FW
+        if m_fw['state'] in ['ARCHIVED', 'DEFUSED'] :
+            self.m_logger.info("Cannot rerun fw_id: {}: it is {}.".format(fw_id, m_fw['state']))
+        elif m_fw['state'] == 'WAITING':
+            self.m_logger.debug("Skipping rerun fw_id: {}: it is already WAITING.".format(fw_id))
+        else:
+            print "got here"
+            with WFLock(self, db_name, fw_id):
+                print "and into the lock"
+                wf = self.get_wf_by_fw_id_lzyfw(db_name, fw_id)
+                print wf
+                updated_ids = wf.rerun_fw(fw_id)
+                print updated_ids
+                self._update_wf(db_name, wf, updated_ids)
+                reruns.append(fw_id)
+
+        # rerun duplicated FWs
+        for f in duplicates:
+            self.m_logger.info("Also rerunning duplicate fw_id: {}".format(f))
+            r = self.rerun_fw(db_name, f, rerun_duplicates=False)  # False for speed, True shouldn't be needed
+            reruns.extend(r)
+        print reruns
+        return reruns  # return the ids that were rerun
+
+    def _update_wf(self, db_name, wf, updated_ids):
+        # note: must be called within an enclosing WFLock
+
+        updated_fws = [wf.id_fw[fid] for fid in updated_ids]
+        old_new = self._upsert_fws(db_name, updated_fws)
+        wf._reassign_ids(old_new)
+
+        # find a node for which the id did not change, so we can query on it to get WF
+        query_node = None
+        for f in wf.id_fw:
+            if f not in old_new.values() or old_new.get(f, None) == f:
+                query_node = f
+                break
+
+        assert query_node is not None
+        if not self.client[db_name].workflows.find_one({'nodes': query_node}):
+            raise ValueError("BAD QUERY_NODE! {}".format(query_node))
+        # redo the links
+        wf = wf.to_db_dict()
+        wf['locked'] = True  # preserve the lock!
+        self.client[db_name].workflows.find_and_modify({'nodes': query_node}, wf)
+
+    def _upsert_fws(self, db_name, fws, reassign_all=False):
+        old_new = {} # mapping between old and new Firework ids
+
+        # sort the FWs by id, then the new FW_ids will match the order of the old ones...
+        fws.sort(key=lambda x: x.fw_id)
+
+        for fw in fws:
+            if fw.fw_id < 0 or reassign_all:
+                new_id = self.get_new_fw_id(db_name)
+                old_new[fw.fw_id] = new_id
+                fw.fw_id = new_id
+            self.client[db_name].fireworks.find_and_modify({'fw_id': fw.fw_id}, fw.to_db_dict(), upsert=True)
+
+        return old_new
+
+
+    def get_new_fw_id(self, db_name):
+        """
+        Checkout the next Firework id
+        """
+        try:
+            return self.client[db_name].fw_id_assigner.find_and_modify({}, {'$inc': {'next_fw_id': 1}})['next_fw_id']
+        except:
+            raise ValueError("Could not get next FW id! If you have not yet initialized the database, please do so by performing a database reset (e.g., lpad reset)")
+
+    def get_wf_by_fw_id_lzyfw(self, dbname, fw_id):
+        """
+        Given a FireWork id, give back the Workflow containing that FireWork
+        :param fw_id:
+        :return: A Workflow object
+        """
+        links_dict = self.client[dbname].workflows.find_one({'nodes': fw_id})
+        if not links_dict:
+            raise ValueError("Could not find a Workflow with fw_id: {}".format(fw_id))
+
+        fws = []
+        for fw_id in links_dict['nodes']:
+            fws.append(LazyFirework(fw_id, self.client[dbname].fireworks, self.client[dbname].launches))
+        # Check for fw_states in links_dict to conform with preoptimized workflows
+        if 'fw_states' in links_dict:
+            fw_states = dict([(int(k), v) for (k, v) in links_dict['fw_states'].items()])
+        else:
+            fw_states = None
+
+        return Workflow(fws, links_dict['links'], links_dict['name'],
+                        links_dict['metadata'], links_dict['created_on'],
+                        links_dict['updated_on'], fw_states)
+
+class LazyFirework(object):
+    """
+    A LazyFirework only has the fw_id, and grabs other data just-in-time.
+    This representation can speed up Workflow loading as only "important" FWs need to be
+    fully loaded.
+    :param fw_id:
+    :param fw_coll:
+    :param launch_coll:
+    """
+
+    # Get these fields from DB when creating new FireWork object
+    db_fields = ('name', 'fw_id', 'spec', 'created_on', 'state')
+    db_launch_fields = ('launches', 'archived_launches')
+
+    def __init__(self, fw_id, fw_coll, launch_coll):
+        # This is the only attribute known w/o a DB query
+        self.fw_id = fw_id
+
+        self._fwc, self._lc = fw_coll, launch_coll
+        self._launches = {k: False for k in self.db_launch_fields}
+        self._fw, self._lids = None, None
+
+    # FireWork methods
+
+    @property
+    def state(self):
+        return self.partial_fw._state
+
+    @state.setter
+    def state(self, state):
+        self.partial_fw._state = state
+        self.partial_fw.updated_on = datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return self.full_fw.to_dict()
+
+    def _rerun(self):
+        self.full_fw._rerun()
+
+    def to_db_dict(self):
+        return self.full_fw.to_db_dict()
+
+    def __str__(self):
+        return 'LazyFireWork object: (id: {})'.format(self.fw_id)
+
+    # Properties that shadow FireWork attributes
+
+    @property
+    def tasks(self): return self.partial_fw.tasks
+    @tasks.setter
+    def tasks(self, value): self.partial_fw.tasks = value
+
+    @property
+    def spec(self): return self.partial_fw.spec
+    @spec.setter
+    def spec(self, value): self.partial_fw.spec = value
+
+    @property
+    def name(self): return self.partial_fw.name
+    @name.setter
+    def name(self, value): self.partial_fw.name = value
+
+    @property
+    def created_on(self): return self.partial_fw.created_on
+    @created_on.setter
+    def created_on(self, value): self.partial_fw.created_on = value
+
+    @property
+    def updated_on(self): return self.partial_fw.updated_on
+    @updated_on.setter
+    def updated_on(self, value): self.partial_fw.updated_on = value
+
+    @property
+    def parents(self): return self.partial_fw.parents
+    @parents.setter
+    def parents(self, value): self.partial_fw.parents = value
+
+    # Properties that shadow FireWork attributes, but which are
+    # fetched individually from the DB (i.e. launch objects)
+
+    @property
+    def launches(self):
+        return self._get_launch_data('launches')
+    @launches.setter
+    def launches(self, value):
+        self._launches['launches'] = True
+        self.partial_fw.launches = value
+
+    @property
+    def archived_launches(self):
+        return self._get_launch_data('archived_launches')
+    @archived_launches.setter
+    def archived_launches(self, value):
+        self._launches['archived_launches'] = True
+        self.partial_fw.archived_launches = value
+
+    # Lazy properties that idempotently instantiate a FireWork object
+
+    @property
+    def partial_fw(self):
+        if not self._fw:
+            fields = list(self.db_fields) + list(self.db_launch_fields)
+            data = self._fwc.find_one({'fw_id': self.fw_id}, projection=fields)
+            launch_data = {}  # move some data to separate launch dict
+            for key in self.db_launch_fields:
+                launch_data[key] = data[key]
+                del data[key]
+
+            self._lids = launch_data
+            self._fw = Firework.from_dict(data)
+        return self._fw
+
+    @property
+    def full_fw(self):
+        #map(self._get_launch_data, self.db_launch_fields)
+        for launch_field in self.db_launch_fields:
+            self._get_launch_data(launch_field)
+        return self._fw
+
+    # Get a type of Launch object
+
+    def _get_launch_data(self, name):
+        """Pull launch data individually for each field.
+
+        :param name: Name of field, e.g. 'archived_launches'.
+        :return: Launch obj (also propagated to self._fw)
+        """
+        fw = self.partial_fw  # assure stage 1
+        if not self._launches[name]:
+            launch_ids = self._lids[name]
+            if launch_ids:
+                data = self._lc.find({'launch_id': {"$in": launch_ids}})
+                result = list(map(Launch.from_dict, data))
+            else:
+                result = []
+            setattr(fw, name, result)  # put into real FireWork obj
+            self._launches[name] = True
+        return getattr(fw, name)

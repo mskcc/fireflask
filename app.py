@@ -201,7 +201,7 @@ def home(dbname=None, page=None):
     tot_wfs = sum(wf_nums)
     num_pages = int(tot_wfs / PER_PAGE)
     if not page:
-        page = 0
+        page = 1
     else:
         page = int(page)
     #g Newest Workflows table data
