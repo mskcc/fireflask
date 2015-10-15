@@ -6,6 +6,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.jsonview.css') }}" />
   <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
   <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.jsonview.js') }}"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/cytoscape.min.js') }}"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/dagre.js') }}"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/wf_cyto.js') }}"></script>
   <script type="text/javascript">
     var json = {{ wf | tojson }};
 
@@ -36,12 +39,13 @@
 
 {% block content %}
 <h4 class="text-center">Workflow {{ wf_id }} </h4>
-
+  <div id="cy"></div>
 <button class="btn btn-default" id="collapse-btn">Collapse</button>
   <button class="btn btn-default" id="expand-btn">Expand</button>
   <button class="btn btn-default" id="toggle-btn">Toggle</button>
   <button class="btn btn-default" id="toggle-level1-btn">Toggle level1</button>
   <button class="btn btn-default" id="toggle-level2-btn">Toggle level2</button>
   <div id="json"></div>
+  <div id="wf_id" style="display:none">{{ wf_id }}</div>
 
 {% endblock %}

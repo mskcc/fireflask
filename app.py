@@ -19,10 +19,10 @@ app = Flask(__name__)
 app.use_reloader=True
 CMO_CONFIG_LOC="/opt/common/CentOS_6-dev/cmo"
 hello = __name__
-lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo.yaml")
+lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo_launchpad.yaml")
 PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
-client = MongoClient(host="plvcbiocmo2.mskcc.org", port=27017)
+client = MongoClient(host="u36.cbio.mskcc.org", port=27017)
 dbnames = client.database_names()
 
 state_to_class= {"RUNNING" : "warning",
@@ -31,9 +31,16 @@ state_to_class= {"RUNNING" : "warning",
                  "READY"   : "info",
                  "COMPLETED" : "success"
                  }
+state_to_color= {"RUNNING" : "#F4B90B",
+                 "WAITING" : "#1F62A2",
+                 "FIZZLED" : "#DB0051",
+                 "READY"   : "#2E92F2",
+                 "COMPLETED" : "#24C75A"
+                 }
 
 for administrative_db in ["admin", "local", "test", "daemons"]:
-    dbnames.remove(administrative_db)
+    if administrative_db in dbnames:
+        dbnames.remove(administrative_db)
 
 #FIXME replace ith CMO method
 
@@ -139,6 +146,40 @@ def show_workflow(dbname, wf_id):
     return render_template('wf_details.html', **locals())
 
 
+@app.route('/<dbname>/json/<int:wf_id>')
+def workflow_json(dbname, wf_id):
+    global dbnames
+    db_names = dbnames
+    db_name = dbname
+    try:
+        int(wf_id)
+    except ValueError:
+        raise ValueError("Invalid fw_id: {}".format(wf_id))
+    wf = lp.client[dbname].workflows.find_one({'nodes':wf_id})
+    fireworks = list(lp.client[dbname].fireworks.find({"fw_id": {"$in":wf["nodes"]}}, projection=["name","fw_id"]))
+    node_name = dict()
+    nodes_and_edges = { 'nodes': list(), 'edges': list()}
+    for firework in fireworks:
+        node_name[firework['fw_id']]=firework['name']
+    for node in wf['nodes']:
+        node_obj = dict()
+        node_obj['id'] = str(node)
+        node_obj['name']=node_name[node].replace("Filt.", "Filter ")
+        node_obj['state']=state_to_color[wf['fw_states'][str(node)]]
+        node_obj['width']=len(node_obj['name'])*10
+        nodes_and_edges['nodes'].append({'data':node_obj})
+        if str(node) in wf['links']:
+            for link in wf['links'][str(node)]:
+                link_object = dict()
+                link_object['source']=str(node)
+                link_object['target']=str(link)
+                nodes_and_edges['edges'].append({'data':link_object})
+    return jsonify(nodes_and_edges)
+
+
+
+   
+
 @app.route('/<dbname>/fw/', defaults={"state": "total"})
 @app.route("/<dbname>/fw/<state>/")
 def fw_states(dbname, state):
@@ -213,7 +254,7 @@ def home(dbname=None, page=None):
             "name": item['name'],
             "state": item['state'],
             "fireworks": list(lp.client[dbname].fireworks.find({"fw_id": {"$in": item["nodes"]}},
-                                                limit=PER_PAGE, sort=[('fw_id', DESCENDING)],
+                                                sort=[('fw_id', DESCENDING)],
                                                 projection=["state", "name", "fw_id"])),
             'panel_class' : state_to_class[item['state']]
         })
@@ -221,4 +262,4 @@ def home(dbname=None, page=None):
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="plvcbiocmo2.mskcc.org", port=8080)
+    app.run(debug=True, host="haystack.mskcc.org", port=5000)
