@@ -257,19 +257,19 @@ def home(dbname=None, page=None):
     for item in wfs_shown:
         states = defaultdict(int)
         total = 0
-        progress_bar_dict = dict()
+        progress_bar_list = list()
         for key, value in item['fw_states'].items():
             states[value]+=1
             total+=1
-        for key, value in states.items():
-            print item['nodes'][0], key, value*100/total
-            progress_bar_dict[state_to_class[key]]= value*100/total
+        for state in ['RUNNING', 'READY', 'WAITING', 'COMPLETED', 'FIZZLED']:
+            if state in states:
+                progress_bar_list.append((state_to_class[state], states[state]*100/total, states[state]))
             
         wf_info.append({
             "id": item['nodes'][0],
             "name": item['name'],
             "state": item['state'],
-            "progress_bar" : progress_bar_dict,
+            "progress_bar" : progress_bar_list,
             'panel_class' : state_to_class[item['state']]
         })
     print wf_info

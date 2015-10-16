@@ -33,9 +33,10 @@
                     </div>
                     <div class="panel-body">     
                         <div class="progress">
-                            {% for style, percent in wf.progress_bar.iteritems() %}
-                            <div class="progress-bar progress-bar-{{ style }} {% if style=='warning'%}active progress-bar-striped{%endif %}" style="width: {{percent}}%">
+                            {% for style, percent, number in wf.progress_bar %}
 
+                            <div class="progress-bar progress-bar-{{ style }} {% if style=='warning'%}active progress-bar-striped{%endif %}" style="width: {{percent}}%">
+  {{number}}
 
                             </div>
                             {% endfor %}
