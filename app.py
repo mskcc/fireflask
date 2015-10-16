@@ -6,6 +6,7 @@ import os, json, sys
 #oh shitttt son
 from launchpad import FlaskPad
 from flask.ext.paginate import Pagination
+from collections import defaultdict
 ###############################
 #from tornado.wsgi import WSGIContainer
 #from tornado.httpserver import HTTPServer
@@ -148,6 +149,7 @@ def show_workflow(dbname, wf_id):
 
 @app.route('/<dbname>/json/<int:wf_id>')
 def workflow_json(dbname, wf_id):
+    print dbname
     global dbnames
     db_names = dbnames
     db_name = dbname
@@ -155,7 +157,11 @@ def workflow_json(dbname, wf_id):
         int(wf_id)
     except ValueError:
         raise ValueError("Invalid fw_id: {}".format(wf_id))
-    wf = lp.client[dbname].workflows.find_one({'nodes':wf_id})
+
+    wf = lp.client[db_name].workflows.find_one({'nodes':wf_id})
+    print db_name
+    print wf_id
+    print wf
     fireworks = list(lp.client[dbname].fireworks.find({"fw_id": {"$in":wf["nodes"]}}, projection=["name","fw_id"]))
     node_name = dict()
     nodes_and_edges = { 'nodes': list(), 'edges': list()}
@@ -249,15 +255,24 @@ def home(dbname=None, page=None):
     wfs_shown = lp.client[dbname].workflows.find({}, limit=PER_PAGE, sort=[('_id', DESCENDING)]).skip((page-1)*PER_PAGE)
     wf_info = []
     for item in wfs_shown:
+        states = defaultdict(int)
+        total = 0
+        progress_bar_dict = dict()
+        for key, value in item['fw_states'].items():
+            states[value]+=1
+            total+=1
+        for key, value in states.items():
+            print item['nodes'][0], key, value*100/total
+            progress_bar_dict[state_to_class[key]]= value*100/total
+            
         wf_info.append({
             "id": item['nodes'][0],
             "name": item['name'],
             "state": item['state'],
-            "fireworks": list(lp.client[dbname].fireworks.find({"fw_id": {"$in": item["nodes"]}},
-                                                sort=[('fw_id', DESCENDING)],
-                                                projection=["state", "name", "fw_id"])),
+            "progress_bar" : progress_bar_dict,
             'panel_class' : state_to_class[item['state']]
         })
+    print wf_info
 
     return render_template('home.html', **locals())
 

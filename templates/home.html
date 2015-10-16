@@ -32,13 +32,16 @@
                         </h3>
                     </div>
                     <div class="panel-body">     
-                            {% for fw  in wf.fireworks %}
-                            <div>
-                                <small><a class="fw-link {{fw.state}}" href="/{{ dbname }}/fw/{{ fw.fw_id }}">{{fw.name}}</a></small>
+                        <div class="progress">
+                            {% for style, percent in wf.progress_bar.iteritems() %}
+                            <div class="progress-bar progress-bar-{{ style }} {% if style=='warning'%}active progress-bar-striped{%endif %}" style="width: {{percent}}%">
+
+
                             </div>
                             {% endfor %}
-                        </div>
-                    </div> 
+                        </div> 
+                    </div>
+                </div>
             {% endfor %}
     </div>
     <div class="col-md-6">
