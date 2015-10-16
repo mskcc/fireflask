@@ -2,7 +2,7 @@ from flask import Flask, render_template, request,jsonify,redirect
 from fireworks import Firework
 from fireworks.utilities.fw_serializers import DATETIME_HANDLER
 from pymongo import DESCENDING, MongoClient
-import os, json, sys
+import os, json, sys, glob
 #oh shitttt son
 from launchpad import FlaskPad
 from flask.ext.paginate import Pagination
@@ -131,6 +131,40 @@ def show_fw(dbname, fw_id):
             bsub_options = fw['spec']['_queueadapter']
     fw = json.loads(json.dumps(fw, default=DATETIME_HANDLER))  # formats ObjectIds
     return render_template('fw_details.html', **locals())
+
+@app.route('/<dbname>/fw/<int:fw_id>/details')
+def get_std(dbname, fw_id):
+    fw = lp.get_fw_dict_by_id(dbname, fw_id)
+    file_pattern = os.path.join(fw['spec']['_launch_dir'], "*.error")
+    err_file = glob.glob(file_pattern)[0]
+    out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
+    return jsonify({"command": fw['spec']['_tasks'][0]['script'][0],"err_file":err_file, "out_file":out_file, "err_tail": "".join(tail(err_file, count=30)), "out_tail":"".join(tail(out_file, count=30))})
+
+def tail(filename, count=1, offset=1024):
+    """
+    A more efficent way of getting the last few lines of a file.
+    Depending on the length of your lines, you will want to modify offset
+    to get better performance.
+    """
+    f_size = os.stat(filename).st_size
+    if f_size == 0:
+        return []
+    with open(filename, 'r') as f:
+        if f_size <= offset:
+            offset = int(f_size / 2)
+        while True:
+            seek_to = min(f_size - offset, 0)
+            f.seek(seek_to)
+            lines = f.readlines()
+            # Empty file
+            if seek_to <= 0 and len(lines) == 0:
+                return []
+            # count is larger than lines in file
+            if seek_to == 0 and len(lines) < count:
+                return lines
+            # Standard case
+            if len(lines) >= (count + 1):
+                return lines[count * -1:]
 
 
 @app.route('/<dbname>/wf/<int:wf_id>')

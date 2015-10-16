@@ -62,7 +62,21 @@ style: cytoscape.stylesheet()
                cy.layout(options);
            }
 });
+var source = $("#job-details").html();
+var template = Handlebars.compile(source);
+cy.on("click", 'node', function(evt) {
+    console.log(this.data('id'));
+    $.getJSON("http://haystack.mskcc.org:5000/" + $("#dbname").html()+ "/fw/" + this.data('id') + "/details", function(result) {
+        console.log(result);
+        console.log(template(result));
+        $("#job-details-target").html(template(result));
+    });
+    });
+ $('#json').JSONView('collapse')
+
 });
+
+
 
 
 });
