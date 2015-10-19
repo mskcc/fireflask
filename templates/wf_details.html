@@ -3,59 +3,57 @@
 {% block title %}Workflow {{ wf_id }} Details{% endblock %}
 
 {% block morehead %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.jsonview.css') }}" />
-  <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.jsonview.js') }}"></script>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/cytoscape.min.js') }}"></script>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/dagre.js') }}"></script>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/handlebars-v4.0.2.js') }}"></script>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/wf_cyto.js') }}"></script>
-  {% raw %}
-  <script id="job-details" type="text/x-handlebars-template">
-      <div class="panel panel-default">
-          <div class="panel-heading">
-              <h4>Step Details</h4>
-          </div>
-              <table class="table table-condensed">
-              <tr>
-                  <th>Command</th>
-                  <td>{{command}}</td>
-              </tr>
-              <tr>
-                  <th>Error File</th>
-                  <td>{{err_file}}</td>
-              <tr>
-                  <th>Output File</th>
-                  <td>{{out_file}}</td>
-              </tr>
-              <tr>
-                  <td>
-                      <a class="btn btn-danger" role="button" data-toggle="collapse" href="#error_tail" aria-expanded="false" aria-controls="collapseExample">
-                          Error Tail
-                      </a>
-                  </td>
-                  <td>
-                       <a class="btn btn-primary" role="button" data-toggle="collapse" href="#output_tail" aria-expanded="false" aria-controls="collapseExample">
-                          Output Tail
-                      </a>
-                  </td>
-            </table>
-            <div class="collapse" id="error_tail">
-                <pre>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.jsonview.css') }}" />
+<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.jsonview.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/cytoscape.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/dagre.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/handlebars-v4.0.2.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/wf_cyto.js') }}"></script>
+{% raw %}
+<script id="job-details" type="text/x-handlebars-template">
+        <div class="panel-heading">
+            <h4>Step Details</h4>
+        </div>
+        <table class="table table-condensed">
+            <tr>
+                <th>Command</th>
+                <td>{{command}}</td>
+            </tr>
+            <tr>
+                <th>Error File</th>
+                <td>{{err_file}}</td>
+                <tr>
+                    <th>Output File</th>
+                    <td>{{out_file}}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a class="btn btn-danger" role="button" data-toggle="collapse" href="#error_tail" aria-expanded="false" aria-controls="collapseExample">
+                            Error Tail
+                        </a>
+                    </td>
+                    <td>
+                        <a class="btn btn-primary" role="button" data-toggle="collapse" href="#output_tail" aria-expanded="false" aria-controls="collapseExample">
+                            Output Tail
+                        </a>
+                    </td>
+                </table>
+                <div class="collapse" id="error_tail">
+                    <h4>Error Tail</h4>
+                    <pre>
                       {{err_tail}}
                 </pre>
-                  </div>
-                  <div class="collapse" id="output_tail">
-                <pre>
+                </div>
+                <div class="collapse" id="output_tail">
+                    <h4>Output Tail</h4>
+                    <pre>
                       {{out_tail}}
                  </pre>
-                  </div>
-
-
-       </div>
-   </script>
-   {% endraw %}
-
+                </div>
+            </div>
+        </script>
+        {% endraw %}
   <script type="text/javascript">
     var json = {{ wf | tojson }};
 
