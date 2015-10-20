@@ -8,6 +8,10 @@ footer .navbar .nav {
     height: 500px;
     width: 100%;
 }
+
+.fireworks_brand {
+    height:50px;
+}
 .navbar-nav .dropdown-menu li>a:hover,
 .navbar-default .navbar-nav>.open>a:focus, 
 .navbar-default .navbar-nav>.open>a:hover, 

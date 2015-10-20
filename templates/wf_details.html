@@ -12,6 +12,7 @@
 <script type="text/javascript" src="{{ url_for('static', filename='js/wf_cyto.js') }}"></script>
 {% raw %}
 <script id="job-details" type="text/x-handlebars-template">
+    <div class="panel panel-default">
         <div class="panel-heading">
             <h4>Step Details</h4>
         </div>
@@ -43,15 +44,15 @@
                     <h4>Error Tail</h4>
                     <pre>
                       {{err_tail}}
-                </pre>
+                    </pre>
                 </div>
-                <div class="collapse" id="output_tail">
-                    <h4>Output Tail</h4>
-                    <pre>
+                    <div class="collapse" id="output_tail">
+                        <h4>Output Tail</h4>
+                        <pre>
                       {{out_tail}}
-                 </pre>
+                     </pre>
+                    </div>
                 </div>
-            </div>
         </script>
         {% endraw %}
   <script type="text/javascript">

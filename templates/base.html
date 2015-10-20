@@ -38,7 +38,10 @@
 <button id="wf_rerun" class="navbar-btn btn-info">Reset Failed on Checked Workflows</button>
 <button id="check_all" class="navbar-btn btn-default">All</button>
 <button id="check_none" class="navbar-btn btn-default">None</button>
-</div> 
+<div class="navbar-right">
+    <img class="fireworks_brand" src="{{url_for('static', filename='images/FireWorks_logo_msk.png')}}"></img>
+</div>
+</div>
     </nav>
     <div class="container-fluid">
         {% block content %}{% endblock %}
