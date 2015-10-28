@@ -20,7 +20,7 @@ $(document).ready(function() {
          stop: function(){} // on layoutstop
 };
 
-       $.getJSON("http://haystack.mskcc.org:5000/"+ $("#dbname").html() + "/json/" + $("#wf_id").html(), function(result){
+       $.getJSON("/"+ $("#dbname").html() + "/json/" + $("#wf_id").html(), function(result){
         var cy = cytoscape({
 container: document.getElementById('cy'),
 style: cytoscape.stylesheet()
