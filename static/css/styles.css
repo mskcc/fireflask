@@ -2,6 +2,7 @@ footer .navbar .nav {
     display: inline-block;
     float: none;
     vertical-align: top;
+    z-index: 1000;
 }
 
 #cy {

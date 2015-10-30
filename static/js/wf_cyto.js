@@ -19,7 +19,6 @@ $(document).ready(function() {
          ready: function(){}, // on layoutready
          stop: function(){} // on layoutstop
 };
-
        $.getJSON("/"+ $("#dbname").html() + "/json/" + $("#wf_id").html(), function(result){
         var cy = cytoscape({
 container: document.getElementById('cy'),
@@ -60,16 +59,14 @@ style: cytoscape.stylesheet()
     ready: function() {
                window.cy = this;
                cy.layout(options);
+               cy.panzoom();
            }
 });
  $('#json').JSONView('collapse')
 var source = $("#job-details").html();
 var template = Handlebars.compile(source);
 cy.on("click", 'node', function(evt) {
-        console.log(this.data('id'));
         $.getJSON("http://haystack.mskcc.org:5000/" + $("#dbname").html()+ "/fw/" + this.data('id') + "/details", function(result) {
-                console.log(result);
-                console.log(template(result));
                 $("#job-details-target").html(template(result));
             });
         });
