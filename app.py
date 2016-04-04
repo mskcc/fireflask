@@ -30,14 +30,17 @@ state_to_class= {"RUNNING" : "warning",
                  "WAITING" : "primary",
                  "FIZZLED" : "danger",
                  "READY"   : "info",
-                 "COMPLETED" : "success"
+                 "COMPLETED" : "success",
+                 "DEFUSED" : "default"
                  }
 state_to_color= {"RUNNING" : "#F4B90B",
                  "WAITING" : "#1F62A2",
                  "FIZZLED" : "#DB0051",
                  "READY"   : "#2E92F2",
-                 "COMPLETED" : "#24C75A"
+                 "COMPLETED" : "#24C75A",
+                 "DEFUSED": "#CCC",
                  }
+
 
 for administrative_db in ["admin", "local", "test", "daemons"]:
     if administrative_db in dbnames:
@@ -136,9 +139,18 @@ def show_fw(dbname, fw_id):
 def get_std(dbname, fw_id):
     fw = lp.get_fw_dict_by_id(dbname, fw_id)
     file_pattern = os.path.join(fw['spec']['_launch_dir'], "*.error")
-    err_file = glob.glob(file_pattern)[0]
-    out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
-    return jsonify({"command": fw['spec']['_tasks'][0]['script'][0],"err_file":err_file, "out_file":out_file, "err_tail": "".join(tail(err_file, count=30)), "out_tail":"".join(tail(out_file, count=30))})
+    err_file = "Not Generated Yet!"
+    err_out = ""
+    out_file = "Not Generated Yet!"
+    out_out = ""
+    try :
+        err_file = glob.glob(file_pattern)[0]
+        err_out = "".join(tail(err_file, count=30))
+        out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
+        out_out = "".join(tail(out_file, count=30))
+    except:
+        pass
+    return jsonify({"command": fw['spec']['_tasks'][0]['script'][0],"err_file":err_file, "out_file":out_file, "err_tail": err_out, "out_tail":out_out})
 
 def tail(filename, count=1, offset=1024):
     """
@@ -177,7 +189,8 @@ def show_workflow(dbname, wf_id):
     except ValueError:
         raise ValueError("Invalid fw_id: {}".format(wf_id))
     wf = lp.get_wf_summary_dict(dbname,wf_id)
-    wf = json.loads(json.dumps(wf, default=DATETIME_HANDLER))  # formats ObjectIds
+    wf = json.loads(json.dumps(wf, default=DATETIME_HANDLER))
+    print "about to return finished variables"# formats ObjectIds
     return render_template('wf_details.html', **locals())
 
 
@@ -275,6 +288,7 @@ def home(dbname=None, page=None):
     else:
         db_name = dbname
     for state in STATES:
+        print dbname
         fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
         wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
     state_nums = zip(STATES, fw_nums, wf_nums)

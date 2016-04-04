@@ -8,6 +8,8 @@ footer .navbar .nav {
 #cy {
     height: 500px;
     width: 100%;
+    border: 1px solid lightgray;
+    margin-bottom: 10px;
 }
 
 .fireworks_brand {

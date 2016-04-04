@@ -1,7 +1,8 @@
 $(document).ready(function() {
     var options = {
          name: 'dagre',
-
+         textureOnViewport:true,
+         hideEdgesOnViewport:true,
           // dagre algo options, uses default value on undefined
          nodeSep: undefined, // the separation between adjacent nodes in the same rank
          edgeSep: undefined, // the separation between adjacent edges in the same rank
@@ -20,6 +21,7 @@ $(document).ready(function() {
          stop: function(){} // on layoutstop
 };
        $.getJSON("/"+ $("#dbname").html() + "/json/" + $("#wf_id").html(), function(result){
+        console.log("Got json!");
         var cy = cytoscape({
 container: document.getElementById('cy'),
 style: cytoscape.stylesheet()
@@ -38,6 +40,7 @@ style: cytoscape.stylesheet()
     })
     .selector('edge')
     .css({
+    'curve-style':'haystack',
     'target-arrow-shape': 'triangle'
     })
     .selector(':selected')
@@ -57,6 +60,7 @@ style: cytoscape.stylesheet()
     edges:result.edges,
       },
     ready: function() {
+               console.log("hit ready");
                window.cy = this;
                cy.layout(options);
                cy.panzoom();
