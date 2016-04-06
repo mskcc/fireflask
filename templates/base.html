@@ -11,7 +11,6 @@
 <title>{% block title %}CMOFLOW{% endblock %}</title>
 </head>
 
-
 <body>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
@@ -24,7 +23,7 @@
         <ul class="nav navbar-nav">
             <li><a href="{{url_for("wf_states", dbname=dbname) }}">Newest Workflows</a></li>
         <li class="dropdown">
-        <a href="/"class="dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Database<span class="caret"></span></a>
+        <a href="javascript:void(0);" class="dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Database<span class="caret"></span></a>
             <ul class="dropdown-menu" id="dbmenu">
                 {% for db in db_names%}
                 <li><a href={{url_for("home", dbname=db, page=1)}}>{{ db }}</a></li>
@@ -51,7 +50,7 @@
     <hr>
     <footer class="footer container text-center">
         <div class="pull-up">
-            &copy Copyright 2015, <a href="http://pythonhosted.org/FireWorks/">FireWorks</a>.</h5>
+            &copy; Copyright 2015, <a href="http://pythonhosted.org/FireWorks/">FireWorks</a>
     </div>
 </footer>
 {% endblock %}

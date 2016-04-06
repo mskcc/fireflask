@@ -7,15 +7,15 @@
     <div class="col-md-6">
         <ul class="pagination">
             <li {% if page-1 <= 0 %} class="disabled" {%endif %}>
-            <a href={{url_for("home", dbname=dbname, page=page-1) }} aria-label="previous">
+            <a href={{url_for("home", dbname=dbname, page=page-1)}} aria-label="previous">
                 <span aria-hidden="true">&laquo;</span>
             </a>
             <li>
         {% for page_num in range(1, num_pages+1) %}
-        <li {% if page==page_num %}class="active"{% endif %}><a href="/{{ dbname }}/{{ page_num }}" >{{ page_num }}</a></li>
+        <li {% if page==page_num %}class="active"{% endif %}><a href="{{url_for('home', dbname=dbname)}}{{page_num}}">{{ page_num }}</a></li>
         {% endfor %}
         <li {% if page+1 >= num_pages+1%} class="disabled" {% endif %}>
-        <a href="/{{ dbname }}/{{ page + 1 }}"><span>&raquo;</span></a>
+        <a href="{{url_for('home', dbname=dbname)}}{{page+1}}"><span>&raquo;</span></a>
         </li>
     </ul>
 
@@ -66,8 +66,8 @@
             {% endfor %}
             <tr>
                 <th><div align="right">TOTAL</div></th>
-                <td><center><a href="/{{ dbname }}/fw">{{ tot_fws }}</a></center></td>
-                <td><center><a href="/{{ dbname }}/wf">{{ tot_wfs }}</a></center></td>
+                <td><center><a href={{url_for("fw_states", dbname=dbname)}}>{{ tot_fws }}</a></center></td>
+                <td><center><a href={{url_for("wf_states", dbname=dbname)}}>{{ tot_wfs }}</a></center></td>
             </tr>
         </table>
     </div>
