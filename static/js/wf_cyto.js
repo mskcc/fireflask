@@ -78,7 +78,7 @@ style: cytoscape.stylesheet()
 var source = $("#job-details").html();
 var template = Handlebars.compile(source);
 cy.on("click", 'node', function(evt) {
-        $.getJSON("http://haystack.mskcc.org:5000/" + $("#dbname").html()+ "/fw/" + this.data('id') + "/details", function(result) {
+        $.getJSON("/workflows/" + $("#dbname").html()+ "/fw/" + this.data('id') + "/details", function(result) {
                 $("#job-details-target").html(template(result));
             });
         });
