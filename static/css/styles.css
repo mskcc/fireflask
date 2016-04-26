@@ -5,6 +5,10 @@ footer .navbar .nav {
     z-index: 1000;
 }
 
+.top-buffer {
+    margin-top:20px;
+}
+
 #cy {
     height: 500px;
     width: 100%;

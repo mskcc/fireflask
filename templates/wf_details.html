@@ -58,44 +58,46 @@
                 </div>
         </script>
         {% endraw %}
-  <script type="text/javascript">
-    var json = {{ wf | tojson }};
-
-    $(function() {
-      $("#json").JSONView(json);
-
-      $('#collapse-btn').on('click', function() {
-        $('#json').JSONView('collapse');
-      });
-      $('#expand-btn').on('click', function() {
-        $('#json').JSONView('expand');
-      });
-
-      $('#toggle-btn').on('click', function() {
-        $('#json').JSONView('toggle');
-      });
-
-      $('#toggle-level1-btn').on('click', function() {
-        $('#json').JSONView('toggle', 1);
-      });
-
-      $('#toggle-level2-btn').on('click', function() {
-        $('#json').JSONView('toggle', 2);
-      });
-    });
-  </script>
 {% endblock %}
 
 {% block content %}
+        <div id="workflow_graph" style="display:none">
         <h4 class="text-center">Workflow {{ wf_id }} </h4>
         <div id="cy"></div>
+    </div>
   <div id="job-details-target"></div>
-<button class="btn btn-default" id="collapse-btn">Collapse</button>
-  <button class="btn btn-default" id="expand-btn">Expand</button>
-  <button class="btn btn-default" id="toggle-btn">Toggle</button>
-  <button class="btn btn-default" id="toggle-level1-btn">Toggle level1</button>
-  <button class="btn btn-default" id="toggle-level2-btn">Toggle level2</button>
-  <div id="json"></div>
-  <div id="wf_id" style="display:none">{{ wf_id }}</div>
+  <div class="row top-buffer">
+      <div class="col-md-12">
+          <div class="form-inline">
+              <div class="form-group">
+                  <button class="btn btn-default" id="showworkflow">Show Workflow Graph</button>
+              </div>
+              <div class="form-group">
+                  <input type="text" class="form-control" id="namesearch" placeholder="search for steps by name..."></input>
+                  <button class="btn btn-default form-control" id="search">Search!</button>
+              </div>
+          </div>
+      </div>
+  </div>
+      <div class="row top-buffer">
+          <div class="col-md-12">
+              <table class="table table-bordered">
+                  <tr>
+                      <th>State</th>
+                      <th>ID</th>
+                      <th>Name</th>
+                  </tr>
+                  {% for row in rows %}
+                  <tr>
+                      <td><span class="label {{ row.state }}">{{ row.state }}</span>
+                          <td><center><a href="/{{ dbname }}/fw/{{ row.fw_id }}">{{ row.fw_id }}</a></center></td>
+                          <td>{{ row.name }}</td>
+                      </tr>
+                      {% endfor %}
+              </table>
 
-{% endblock %}
+                  <div id="wf_id" style="display:none">{{ wf_id }}</div>
+                  <div id="name" style="display:none">{{name}}</div>
+                  {% endblock %}
+          </div>
+      </div>

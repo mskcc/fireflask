@@ -188,9 +188,20 @@ def show_workflow(dbname, wf_id):
         int(wf_id)
     except ValueError:
         raise ValueError("Invalid fw_id: {}".format(wf_id))
-    wf = lp.get_wf_summary_dict(dbname,wf_id)
-    wf = json.loads(json.dumps(wf, default=DATETIME_HANDLER))
-    print "about to return finished variables"# formats ObjectIds
+    wf_projection = ['state', 'created_on', 'name', 'nodes']
+    fw_proj = ['state','fw_id', 'name']
+    wf = lp.client[db_name].workflows.find_one({'nodes':wf_id}, projection=wf_projection)
+    q = {"fw_id" : {"$in": wf['nodes']}}
+    try:
+        if request.args.get('name') != None:
+            name = request.args.get('name')
+            q = {"$and": [ q, {"name": {"$regex":name}}]}
+    except:
+        pass
+    rows = []
+    for fw in lp.client[db_name].fireworks.find(q, projection=fw_proj):
+        rows.append(fw)
+    del wf["_id"]
     return render_template('wf_details.html', **locals())
 
 
@@ -209,24 +220,43 @@ def workflow_json(dbname, wf_id):
     print db_name
     print wf_id
     print wf
-    fireworks = list(lp.client[dbname].fireworks.find({"fw_id": {"$in":wf["nodes"]}}, projection=["name","fw_id"]))
+    q = {"fw_id": {"$in":wf["nodes"]}}
+    try:
+        name =request.args.get('name')
+        if name:
+            q.update({"name": {"$regex": name}})
+    except:
+        pass
+    fireworks = list(lp.client[dbname].fireworks.find(q, projection=["name","fw_id"]))
     node_name = dict()
     nodes_and_edges = { 'nodes': list(), 'edges': list()}
+    print wf['fw_states']
     for firework in fireworks:
         node_name[firework['fw_id']]=firework['name']
-    for node in wf['nodes']:
-        node_obj = dict()
-        node_obj['id'] = str(node)
-        node_obj['name']=node_name[node].replace("Filt.", "Filter ")
-        node_obj['state']=state_to_color[wf['fw_states'][str(node)]]
-        node_obj['width']=len(node_obj['name'])*10
-        nodes_and_edges['nodes'].append({'data':node_obj})
-        if str(node) in wf['links']:
-            for link in wf['links'][str(node)]:
-                link_object = dict()
-                link_object['source']=str(node)
-                link_object['target']=str(link)
-                nodes_and_edges['edges'].append({'data':link_object})
+    if not name:
+        #do full graph
+        for node in wf['nodes']:
+            node_obj = dict()
+            node_obj['id'] = str(node)
+            node_obj['name']=node_name[node]
+            node_obj['state']=state_to_color[wf['fw_states'][str(node)]]
+            node_obj['width']=len(node_obj['name'])*10
+            nodes_and_edges['nodes'].append({'data':node_obj})
+            if str(node) in wf['links']:
+                for link in wf['links'][str(node)]:
+                    link_object = dict()
+                    link_object['source']=str(node)
+                    link_object['target']=str(link)
+                    nodes_and_edges['edges'].append({'data':link_object})
+    else:
+        for firework in fireworks:
+            node_obj = dict()
+            node_obj['id'] = str(firework['fw_id'])
+            node_obj['name']=node_name[firework['fw_id']]
+            node_obj['state']=state_to_color[wf['fw_states'][str(firework['fw_id'])]]
+            node_obj['width']=len(node_obj['name'])*10
+            nodes_and_edges['nodes'].append({'data':node_obj})
+
     return jsonify(nodes_and_edges)
 
 
@@ -241,6 +271,12 @@ def fw_states(dbname, state):
     db_name = dbname
     db = lp.client[dbname].fireworks
     q = {} if state == "total" else {"state": state}
+    try:
+        name =request.args.get('name')
+        if name:
+            q.update({"name": {"$regex": name}})
+    except:
+        pass
     fw_count = lp.get_fw_ids(dbname, query=q, count_only=True)
     try:
         page = int(request.args.get('page', 1))
@@ -262,6 +298,12 @@ def wf_states(dbname, state):
     db_name = dbname
     db = lp.client[dbname].workflows
     q = {} if state == "total" else {"state": state}
+    try:
+        name =request.args.get('name')
+        if name:
+            q.update({"name": {"$regex": name}})
+    except:
+        pass
     wf_count = lp.get_fw_ids(dbname, query=q, count_only=True)
     try:
         page = int(request.args.get('page', 1))
@@ -325,4 +367,4 @@ def home(dbname=None, page=None):
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="haystack.mskcc.org", port=5000)
+    app.run(debug=True)

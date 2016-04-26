@@ -1,4 +1,14 @@
 $(document).ready(function() {
+$("#showworkflow").click(function() {
+    $("#workflow_graph").show();
+    //this code is terrible so i apologize
+    //we are shoving variables into the bottom of a flask page and then reading them here
+    //but we didn't design any of the flask pages and im reluctant to do a refactor if we can bandaid it
+       var url = "/" + $("#dbname").html() + "/json/" + $("#wf_id").html() 
+       if (!($.trim($("#name").html())=='')) {
+           url = url + "?name=" + $("#name").html()
+       }
+       $.getJSON(url, function(result){
     var options = {
          name: 'dagre',
          textureOnViewport:true,
@@ -20,8 +30,7 @@ $(document).ready(function() {
          ready: function(){}, // on layoutready
          stop: function(){} // on layoutstop
 };
-       $.getJSON("/"+ $("#dbname").html() + "/json/" + $("#wf_id").html(), function(result){
-        console.log("Got json!");
+
         var cy = cytoscape({
 container: document.getElementById('cy'),
 style: cytoscape.stylesheet()
@@ -60,7 +69,6 @@ style: cytoscape.stylesheet()
     edges:result.edges,
       },
     ready: function() {
-               console.log("hit ready");
                window.cy = this;
                cy.layout(options);
                cy.panzoom();
@@ -81,5 +89,5 @@ cy.on("click", 'node', function(evt) {
 
 
 });
-
+});
 
