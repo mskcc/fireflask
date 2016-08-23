@@ -18,13 +18,14 @@ from collections import defaultdict
 #IOLoop.instance().start()
 app = Flask(__name__)
 app.config["APPLICATION_ROOT"]="/workflows"
+app.config['PROPAGATE_EXCEPTIONS'] = True
 app.use_reloader=True
 CMO_CONFIG_LOC="/opt/common/CentOS_6-dev/cmo"
 hello = __name__
 lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo_launchpad.yaml")
 PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
-client = MongoClient(host="u36.cbio.private", port=27017)
+client = MongoClient(host="localhost", port=27017)
 dbnames = client.database_names()
 
 state_to_class= {"RUNNING" : "warning",
@@ -364,4 +365,4 @@ def home(dbname=None, page=None):
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=9020)

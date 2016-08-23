@@ -285,7 +285,7 @@ class FlaskPad(FWSerializable):
         """
         fw_ids = []
         criteria = query if query else {}
-
+        print dbname
         if count_only:
             if limit:
                 return ValueError("Cannot count_only and limit at the same time!")
