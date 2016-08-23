@@ -25,7 +25,7 @@ hello = __name__
 lp = FlaskPad.from_file(CMO_CONFIG_LOC + "/cmo_launchpad.yaml")
 PER_PAGE = 20
 STATES = Firework.STATE_RANKS.keys()
-client = MongoClient(host="localhost", port=27017)
+client = MongoClient(host="pitchfork.mskcc.org", port=27017)
 dbnames = client.database_names()
 
 state_to_class= {"RUNNING" : "warning",
@@ -33,7 +33,8 @@ state_to_class= {"RUNNING" : "warning",
                  "FIZZLED" : "danger",
                  "READY"   : "info",
                  "COMPLETED" : "success",
-                 "DEFUSED" : "default"
+                 "DEFUSED" : "default",
+                 "RESERVED": "reserved"
                  }
 state_to_color= {"RUNNING" : "#F4B90B",
                  "WAITING" : "#1F62A2",
@@ -41,6 +42,7 @@ state_to_color= {"RUNNING" : "#F4B90B",
                  "READY"   : "#2E92F2",
                  "COMPLETED" : "#24C75A",
                  "DEFUSED": "#CCC",
+                 "reserved": "#BB8BC1",
                  }
 
 
@@ -135,6 +137,18 @@ def show_fw(dbname, fw_id):
     if '_queueadapter' in fw['spec']:
             bsub_options = fw['spec']['_queueadapter']
     fw = json.loads(json.dumps(fw, default=DATETIME_HANDLER))  # formats ObjectIds
+    file_pattern = os.path.join(fw['spec']['_launch_dir'], "*.error")
+    err_file = "Not Generated Yet!"
+    err_out = ""
+    out_file = "Not Generated Yet!"
+    out_out = ""
+    try :
+        err_file = glob.glob(file_pattern)[0]
+        err_out = "".join(tail(err_file, count=30))
+        out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
+        out_out = "".join(tail(out_file, count=30))
+    except:
+        pass
     return render_template('fw_details.html', **locals())
 
 @app.route('/<dbname>/fw/<int:fw_id>/details')
@@ -328,7 +342,6 @@ def home(dbname=None, page=None):
     else:
         db_name = dbname
     for state in STATES:
-        print dbname
         fw_nums.append(lp.get_fw_ids(dbname, query={'state': state}, count_only=True))
         wf_nums.append(lp.get_wf_ids(dbname,query={'state': state}, count_only=True))
     state_nums = zip(STATES, fw_nums, wf_nums)
@@ -347,9 +360,10 @@ def home(dbname=None, page=None):
         total = 0
         progress_bar_list = list()
         for key, value in item['fw_states'].items():
+            print key, value
             states[value]+=1
             total+=1
-        for state in ['RUNNING', 'READY', 'WAITING', 'COMPLETED', 'FIZZLED']:
+        for state in ['RUNNING', 'READY', 'WAITING', 'COMPLETED', 'FIZZLED', "RESERVED"]:
             if state in states:
                 progress_bar_list.append((state_to_class[state], states[state]*100/total, states[state]))
             
@@ -365,4 +379,4 @@ def home(dbname=None, page=None):
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=9020)
+    app.run(debug=True, host="0.0.0.0", port=5000)

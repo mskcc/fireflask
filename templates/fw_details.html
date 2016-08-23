@@ -46,6 +46,15 @@
   <div class="bs-callout bs-callout-primary">
       <h4>Command</h4>{{ command }} </div>
   {% endif %}
+  <div class="bs-callout bs-callout-primary">
+      <h4>Output File Path: <input class="filepath" type="text" value="{{ out_file }}" readonly> </h4>
+      <pre>{{out_out}}</pre>
+  </div>
+  <div class="bs-callout bs-callout-primary">
+      <h4>Output File Path: <input class="filepath" type="text" value="{{ err_file }}" readonly> </h4>
+      <pre>{{err_out}}</pre>
+  </div>
+
   {% if bsub_options|length > 0 %}
   <form class="form-inline" id="bsub_options_form" method="post" action="/{{ dbname }}/fw/{{ fw_id }}/update">
   {% for key, value in bsub_options.iteritems() %}

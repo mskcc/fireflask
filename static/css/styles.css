@@ -9,6 +9,14 @@ footer .navbar .nav {
     margin-top:20px;
 }
 
+input.filepath {
+    width: 80%;
+}
+
+div.progress-bar-reserved {
+    background-color: #BB8BC1,
+}
+
 #cy {
     height: 500px;
     width: 100%;
