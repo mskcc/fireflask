@@ -95,7 +95,6 @@ def rerun_wf(dbname, wf_id):
         raise ValueError("Invalid wf_id: {}".format(wf_id))
     try:
         wf= lp.client[db_name].workflows.find({'nodes':wf_id}).next()
-        print wf
         for fw_id, state in wf['fw_states'].items():
             if state =="FIZZLED":
                 print "attempting to rerun %s" % fw_id
@@ -114,8 +113,8 @@ def update_fw(dbname, fw_id):
     update_hash={}
     for (key, value) in request.form.items():
         update_hash[key]=value
-    if len(update_hash.keys())>0:
-        print lp.client[db_name].fireworks.update({"fw_id":int(fw_id)},{"$set": {"spec._queueadapter":update_hash}})
+#    if len(update_hash.keys())>0:
+ #       print lp.client[db_name].fireworks.update({"fw_id":int(fw_id)},{"$set": {"spec._queueadapter":update_hash}})
     return redirect(os.path.join(db_name, "fw", str(fw_id) ))
 
 
@@ -137,7 +136,7 @@ def show_fw(dbname, fw_id):
     if '_queueadapter' in fw['spec']:
             bsub_options = fw['spec']['_queueadapter']
     fw = json.loads(json.dumps(fw, default=DATETIME_HANDLER))  # formats ObjectIds
-    file_pattern = os.path.join(fw['spec']['_launch_dir'], "*.error")
+    file_pattern = os.path.join(fw['spec']['_launch_dir'], "*"+fw['launches'][0]['state_history'][0]['reservation_id'] + ".error")
     err_file = "Not Generated Yet!"
     err_out = ""
     out_file = "Not Generated Yet!"
@@ -223,7 +222,6 @@ def show_workflow(dbname, wf_id):
 
 @app.route('/<dbname>/json/<int:wf_id>')
 def workflow_json(dbname, wf_id):
-    print dbname
     global dbnames
     db_names = dbnames
     db_name = dbname
@@ -233,9 +231,6 @@ def workflow_json(dbname, wf_id):
         raise ValueError("Invalid fw_id: {}".format(wf_id))
 
     wf = lp.client[db_name].workflows.find_one({'nodes':wf_id})
-    print db_name
-    print wf_id
-    print wf
     q = {"fw_id": {"$in":wf["nodes"]}}
     try:
         name =request.args.get('name')
@@ -246,7 +241,6 @@ def workflow_json(dbname, wf_id):
     fireworks = list(lp.client[dbname].fireworks.find(q, projection=["name","fw_id"]))
     node_name = dict()
     nodes_and_edges = { 'nodes': list(), 'edges': list()}
-    print wf['fw_states']
     for firework in fireworks:
         node_name[firework['fw_id']]=firework['name']
     if not name:
@@ -360,7 +354,6 @@ def home(dbname=None, page=None):
         total = 0
         progress_bar_list = list()
         for key, value in item['fw_states'].items():
-            print key, value
             states[value]+=1
             total+=1
         for state in ['RUNNING', 'READY', 'WAITING', 'COMPLETED', 'FIZZLED', "RESERVED"]:
@@ -374,9 +367,8 @@ def home(dbname=None, page=None):
             "progress_bar" : progress_bar_list,
             'panel_class' : state_to_class[item['state']]
         })
-    print wf_info
 
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=9020)
