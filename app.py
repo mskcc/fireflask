@@ -46,7 +46,7 @@ state_to_color= {"RUNNING" : "#F4B90B",
                  }
 
 
-for administrative_db in ["admin", "local", "test", "daemons"]:
+for administrative_db in ["admin", "local", "test", "daemons", "cmo_gdc"]:
     if administrative_db in dbnames:
         dbnames.remove(administrative_db)
 
@@ -160,9 +160,11 @@ def get_std(dbname, fw_id):
     out_out = ""
     try :
         err_file = glob.glob(file_pattern)[0]
-        err_out = "".join(tail(err_file, count=30))
+        print err_file
+        err_out = "".join(tail(err_file, count=30)).decode('utf-8')
+        print err_out
         out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
-        out_out = "".join(tail(out_file, count=30))
+        out_out = "".join(tail(out_file, count=30)).decode('utf-8')
     except:
         pass
     return jsonify({"command": fw['spec']['_tasks'][0]['script'][0],"err_file":err_file, "out_file":out_file, "err_tail": err_out, "out_tail":out_out})
