@@ -7,6 +7,7 @@ import os, json, sys, glob
 from launchpad import FlaskPad
 from flask.ext.paginate import Pagination
 from collections import defaultdict
+import codecs
 ###############################
 #from tornado.wsgi import WSGIContainer
 #from tornado.httpserver import HTTPServer
@@ -160,11 +161,9 @@ def get_std(dbname, fw_id):
     out_out = ""
     try :
         err_file = glob.glob(file_pattern)[0]
-        print err_file
-        err_out = "".join(tail(err_file, count=30)).decode('utf-8')
-        print err_out
+        err_out = "".join(tail(err_file, count=30))
         out_file = glob.glob(file_pattern.replace(".error", ".out"))[0]
-        out_out = "".join(tail(out_file, count=30)).decode('utf-8')
+        out_out = "".join(tail(out_file, count=30))
     except:
         pass
     return jsonify({"command": fw['spec']['_tasks'][0]['script'][0],"err_file":err_file, "out_file":out_file, "err_tail": err_out, "out_tail":out_out})
@@ -178,7 +177,7 @@ def tail(filename, count=1, offset=1024):
     f_size = os.stat(filename).st_size
     if f_size == 0:
         return []
-    with open(filename, 'r') as f:
+    with codecs.open(filename, 'r', "utf-8") as f:
         if f_size <= offset:
             offset = int(f_size / 2)
         while True:
@@ -373,4 +372,4 @@ def home(dbname=None, page=None):
     return render_template('home.html', **locals())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=9020)
+    app.run(debug=True, host="0.0.0.0", port=5000)
